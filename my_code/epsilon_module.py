@@ -330,7 +330,7 @@ def compute_save_all_epsilon(cds, time_param, delay, percent):
     else:
         print('ValueError: Delay is not a list nor a integer. Please introduce accepted values.')
 
-def compute_save_delays_epsilon_filtered(ep, time_param, delay, percent, absolute):
+def compute_save_delays_epsilon_filtered(ep, time_param, delay, percent, absolute, filter_market):
     ''' Computes the delayed epsilon drawups for
         different delays and save the file.
 
@@ -341,12 +341,19 @@ def compute_save_delays_epsilon_filtered(ep, time_param, delay, percent, absolut
     '''
     if percent > 0:
         path = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered\epsilon'
-        directory = 'std_' + str(time_param) + '_abs_' + str(absolute) + '_long_' + str(percent)
+        if filter_market:
+            directory = 'std_' + str(time_param) + '_abs_' + str(absolute) + '_long_' + str(percent)
+        else:
+            directory = 'std_' + str(time_param) + '_abs_' + str(absolute) + '_long_' + str(percent) + '_notfiltered'
+
         if not os.path.isdir(os.path.join(path, directory)):
             os.makedirs(os.path.join(path, directory))
     else:
         path = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered\epsilon'
-        directory = 'stddev_' + str(time_param) + '_abs_' + str(absolute)
+        if filter_market:
+            directory = 'std_' + str(time_param) + '_abs_' + str(absolute)
+        else:
+            directory = 'std_' + str(time_param) + '_abs_' + str(absolute) + '_notfiltered'
         if not os.path.isdir(os.path.join(path, directory)):
             os.makedirs(os.path.join(path, directory))
 
@@ -367,7 +374,7 @@ def compute_save_delays_epsilon_filtered(ep, time_param, delay, percent, absolut
         print('ValueError: Delay is not a list nor an integer. Please introduce accepted values.')
 
 
-def compute_save_all_epsilon_filtered(cds, time_param, delay, percent, absolute):
+def compute_save_all_epsilon_filtered(cds, time_param, delay, percent, absolute, filter_market):
     ''' Computes the epsilon drawups for all the time parameters introduced,
         the delayed epsilon drawups for each of them and then save them in the
         correspondent file and directory.
@@ -385,16 +392,26 @@ def compute_save_all_epsilon_filtered(cds, time_param, delay, percent, absolute)
     market_ts[-8] = (market_ts[-9] + market_ts[-7])/2
     if type(time_param) == list:
         for t in time_param:
-            market_drawup = compute_epsilon_drawup_filtered(market_ts, t, percent,absolute)
-            print(market_drawup)
-            for d in delay:
-                ep = compute_table_epsilon_filtered(cds, t, percent, market_drawup, d, absolute)
-                compute_save_delays_epsilon_filtered(ep, t, d, percent, absolute)
+            if filter_market:
+                market_drawup = compute_epsilon_drawup_filtered(market_ts, t, percent,absolute)
+                print(market_drawup)
+                for d in delay:
+                    ep = compute_table_epsilon_filtered(cds, t, percent, market_drawup, d, absolute)
+                    compute_save_delays_epsilon_filtered(ep, t, d, percent, absolute, filter_market)
+            else:
+                ep = compute_table_epsilon_v2(cds, t, percent)
+                for d in delay:
+                    compute_save_delays_epsilon_filtered(ep, t, d, percent, absolute, filter_market)
     elif type(time_param) == int:
-        market_drawup = compute_epsilon_drawup(market_ts, time_param, percent)
-        for d in delay:
-            ep = compute_table_epsilon_filtered(cds, time_param, percent, market_drawup, d, absolute)
-            compute_save_delays_epsilon_filtered(ep, time_param, d, percent, absolute)
+        if filter_market:
+            market_drawup = compute_epsilon_drawup_filtered(market_ts, time_param, percent,absolute)
+            for d in delay:
+                ep = compute_table_epsilon_filtered(cds, time_param, percent, market_drawup, d, absolute)
+                compute_save_delays_epsilon_filtered(ep, time_param, d, percent, absolute, filter_market)
+        else:
+            ep = compute_table_epsilon_v2(cds, time_param, percent)
+            for d in delay:
+                compute_save_delays_epsilon_filtered(ep, time_param, d, percent, absolute, filter_market)
     else:
         print('ValueError: Delay is not a list nor a integer. Please introduce accepted values.')
  
@@ -517,7 +534,23 @@ def filter_market_data(ep, market, delay):
     filtered = [e for e in ep if e not in total]
     return filtered
 
-def epsilon_filtered(percent, absolute):
+def epsilon_filtered(percent, absolute, filter_market):
+    path = r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\Russian_processed\data_5Y'
+    cds = pd.read_excel(os.path.join(path,'entities_data_fixed.xlsx'))
+    first_index = [x[0] for x in enumerate(cds.iloc[0,:]) if type(x[1]) is str][-1]
+
+    df_static = cds[cds.columns[:first_index+1]].copy()
+    df_dynamic = cds[cds.columns[first_index + 1:]].copy()
+
+    initial = '01-MAY-14'
+    final = '31-MAR-15'
+    data = df_dynamic.iloc[:,list(df_dynamic.columns).index(initial):(list(df_dynamic.columns).index(final)+1)]
+
+    cds_ts = pd.concat([df_static,data],axis = 1)
+
+    compute_save_all_epsilon_filtered(cds_ts, [10, 15, 20], [1, 2, 3], percent, absolute, filter_market)
+
+def epsilon_not_filter(percent,absolute):
     path = r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\Russian_processed\data_5Y'
     cds = pd.read_excel(os.path.join(path,'entities_data_fixed.xlsx'))
     first_index = [x[0] for x in enumerate(cds.iloc[0,:]) if type(x[1]) is str][-1]
@@ -532,6 +565,7 @@ def epsilon_filtered(percent, absolute):
     cds_ts = pd.concat([df_static,data],axis = 1)
 
     compute_save_all_epsilon_filtered(cds_ts, [10, 15, 20], [1, 2, 3], percent, absolute)
+
 
 
 def epsilon(percent):

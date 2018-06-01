@@ -158,12 +158,7 @@ dic_count = {'RUSSIA':'Russian Fedn',
 'VIP':'OPEN Jt Stk Co VIMPEL Comms',
 'VTB':'JSC VTB Bk'}
 
-path_bayes = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered\probabilities\bds'
-directory = 'stddev_'+str(epsilon_up_time_parameter)+'_abs_'+str(absolute_up)
-filename = 'prob_'+str(epsilon_up_time_parameter)+'_delay_'+str(len(input_time_lag)-1)+'.csv'
-
-bayes = pd.read_csv(os.path.join(path_bayes, directory, filename),index_col = 0)
-bayes.rename(index = dic_count, inplace = True)
+    
 
 comp = pd.concat([aux2,aux, bayes], axis = 1).sort_values(by='CountryRank',ascending = False)
 comp.rename(columns = {'CountryRank': 'Neuronal Net',
@@ -174,10 +169,17 @@ comp.loc['Russian Fedn','Connectedness to Sov'] = 1
 comp.loc['Russian Fedn','Bayes'] = 1
 
 if filter_market:
+    path_bayes = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered\probabilities\bds'
+    directory = 'stddev_'+str(epsilon_up_time_parameter)+'_abs_'+str(absolute_up)
     filename = 'prob_weight_bayes_marketfilter_'\
         + str(epsilon_up_time_parameter)\
         + '_abs_'+str(absolute_up)+'.csv'
+
+    bayes = pd.read_csv(os.path.join(path_bayes, directory, filename),index_col = 0)
+    bayes.rename(index = dic_count, inplace = True)
 else:
+    path_bayes = r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\Sliced_ep_draw_new\original_dates'
+    
     filename = 'prob_weight_bayes_notfilter_'\
         + str(epsilon_up_time_parameter)\
         + '_abs_'+str(absolute_up)+'.csv'
