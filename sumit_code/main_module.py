@@ -38,157 +38,182 @@ input_entities_list = input_entities_np[:, 0]
 #print input_entities_list
 input_epsilon_choice = 'std_dev'  # choices are 'std_dev' or 'percentage'
 market_filename = "market_data.npy"
-filter_market = True
-if filter_market:
-    input_market_ts = dp.load_market_data(path, market_filename)
-    input_market_ts[-8] = (input_market_ts[-7]+input_market_ts[-9])/2
-else:
-    input_market_ts = np.zeros([np.shape(input_entities_np)[0]-1])
 
-#ut.plot_rus_time_series(input_entities_np)
+for epsilon_up_time_parameter in [10,15,20]:
+    for delay in [1,2,3]:
+        for absolute_up in [0,10]:
+            for filter_market in [True, False]:
+                # filter_market = True
+                if filter_market:
+                    input_market_ts = dp.load_market_data(path, market_filename)
+                    input_market_ts[-8] = (input_market_ts[-7]+input_market_ts[-9])/2
+                else:
+                    input_market_ts = np.zeros([np.shape(input_entities_np)[0]-1])
 
-#print input_market_ts
-print('Done loading data:' + str(datetime.datetime.now() - start_time))
-print ('----------------------------------------------------------------')
+                #ut.plot_rus_time_series(input_entities_np)
 
-#ing_np =input_entities_np[input_entities_np[:,0] == 'ING Groep NV', :][0]
-#print "ing ", ing_np
-#print np.std(ing_np[2:] - ing_np[1:-1])/ np.mean(ing_np[2:] - ing_np[1:-1])
+                #print input_market_ts
+                print('Done loading data:' + str(datetime.datetime.now() - start_time))
+                print ('----------------------------------------------------------------')
 
-# get the coefficient of variance of returns of iTraxx
-#print 'coefficient of variance', ut.get_coefficient_of_variance(input_market_ts)
-# plotting time series with epsilon_draw-ups
-entity_name = u'Russian Fedn'
+                #ing_np =input_entities_np[input_entities_np[:,0] == 'ING Groep NV', :][0]
+                #print "ing ", ing_np
+                #print np.std(ing_np[2:] - ing_np[1:-1])/ np.mean(ing_np[2:] - ing_np[1:-1])
 
-#ut.plot_epsilon_drawup_entity(input_entities_np, entity_name, 'std_dev', 5, 0, 0, 0, 5, 1, 0.00, 10)
-#nc.test_epsilon_std_dev_params(input_entities_np, entity_name, [10, 15, 20], 1)
+                # get the coefficient of variance of returns of iTraxx
+                #print 'coefficient of variance', ut.get_coefficient_of_variance(input_market_ts)
+                # plotting time series with epsilon_draw-ups
+                entity_name = u'Russian Fedn'
 
-#entity_index = np.where(input_entities_np[:, 0] == entity_name)
-#entity_ts = np.ravel(input_entities_np[entity_index, 2:])
-#for param in [5, 10, 20]:
-#    print nc.compute_epsilon_drawup(entity_ts, 'std_dev', 5, 0, 0, 0, param, 1, 0.00, 20)
+                #ut.plot_epsilon_drawup_entity(input_entities_np, entity_name, 'std_dev', 5, 0, 0, 0, 5, 1, 0.00, 10)
+                #nc.test_epsilon_std_dev_params(input_entities_np, entity_name, [10, 15, 20], 1)
 
-
-
-
-input_time_lag = [0,1,2,3]
-epsilon_down_time_parameter = 20
-epsilon_down_scale = 0
-minimal_epsilon_down = 0
-absolute_down = 0
-epsilon_up_time_parameter = 20
-epsilon_up_scale = 1
-minimal_epsilon_up = 0
-absolute_up = 10
-
-weight_matrix,epsilon_drawup_matrix = nc.epsilon_drawup_network(
-            input_entities_np, input_time_lag, input_market_ts,
-            input_epsilon_choice, epsilon_down_time_parameter,
-            epsilon_down_scale, minimal_epsilon_down, absolute_down,
-            epsilon_up_time_parameter, epsilon_up_scale,
-            minimal_epsilon_up, absolute_up)
-
-# ut.convert_weight_matrix_to_csv(weight_matrix)
+                #entity_index = np.where(input_entities_np[:, 0] == entity_name)
+                #entity_ts = np.ravel(input_entities_np[entity_index, 2:])
+                #for param in [5, 10, 20]:
+                #    print nc.compute_epsilon_drawup(entity_ts, 'std_dev', 5, 0, 0, 0, param, 1, 0.00, 20)
 
 
-#nc.evaluate_max_choice(epsilon_drawup_matrix,input_entities_list)
-#nc.calculate_network_stats(input_entities_list, weight_matrix)
-#nc.test_significance_network(input_entities_np, input_time_lag, input_market_ts,
-#                                          input_epsilon_choice, 5, 0, 0, 0, 5, 1, 0.00, 10)
-'''for i in range(1):
-    input_time_lag = range(0,i+1)
-    print input_time_lag
-    weight_matrix = nc.epsilon_drawup_network(input_entities_np, input_time_lag, input_market_ts,
-                                          input_epsilon_choice, 5, 0, 0, 0, 5, 1, 0.00, 20)
 
-    print np.mean(weight_matrix[0,:])
-    plt.plot(weight_matrix[0,:], label = str(i))
-plt.legend(loc=2)
-plt.show()'''
-    #print weight_matrix[0, :]
+                # delay = 2
+                input_time_lag = list(range(delay+1))
+                epsilon_down_time_parameter = 20
+                epsilon_down_scale = 0
+                minimal_epsilon_down = 0
+                absolute_down = 0
+                # epsilon_up_time_parameter = 15
+                epsilon_up_scale = 1
+                minimal_epsilon_up = 0
+                # absolute_up = 0
 
-#print weight_matrix
+                weight_matrix,epsilon_drawup_matrix = nc.epsilon_drawup_network(
+                            input_entities_np, input_time_lag, input_market_ts,
+                            input_epsilon_choice, epsilon_down_time_parameter,
+                            epsilon_down_scale, minimal_epsilon_down, absolute_down,
+                            epsilon_up_time_parameter, epsilon_up_scale,
+                            minimal_epsilon_up, absolute_up)
 
-#plt.imshow(weight_matrix, cmap='hot', interpolation='nearest')
-#plt.show()
+                # ut.convert_weight_matrix_to_csv(weight_matrix)
 
-#plotting network based on weight matrix
-#ut.draw_network_alternative(weight_matrix, input_entities_np[:, 0], input_entities_np[:, 1], True)
 
-#network_stats_np = nc.calculate_network_stats(input_entities_np[:, 0], weight_matrix)
-#print (pd.DataFrame(data=network_stats_np, columns=['Entities', 'Centrality']))
+                #nc.evaluate_max_choice(epsilon_drawup_matrix,input_entities_list)
+                #nc.calculate_network_stats(input_entities_list, weight_matrix)
+                #nc.test_significance_network(input_entities_np, input_time_lag, input_market_ts,
+                #                                          input_epsilon_choice, 5, 0, 0, 0, 5, 1, 0.00, 10)
+                '''for i in range(1):
+                    input_time_lag = range(0,i+1)
+                    print input_time_lag
+                    weight_matrix = nc.epsilon_drawup_network(input_entities_np, input_time_lag, input_market_ts,
+                                                          input_epsilon_choice, 5, 0, 0, 0, 5, 1, 0.00, 20)
 
-#print '----------------------------------------------------------------'
-print('Done calibrating network weight matrix:' + str(datetime.datetime.now() - start_time))
-#print '----------------------------------------------------------------'
-print(weight_matrix)
-weight_df = pd.DataFrame(weight_matrix, index = input_entities_list, columns = input_entities_list)
-aux = weight_df.loc['Russian Fedn',:]
-print(weight_df.loc['Russian Fedn',:])
-# print(pd.DataFrame(weight_matrix))
+                    print np.mean(weight_matrix[0,:])
+                    plt.plot(weight_matrix[0,:], label = str(i))
+                plt.legend(loc=2)
+                plt.show()'''
+                    #print weight_matrix[0, :]
 
-# choices are self-calibrating or name of the entity to stress
-#input_stressed_list = ['self-calibrating']
-input_stressed_list = ['Russian Fedn']
-# float parameter between 0 and 1 corresponding to initial level of stress for stressed entity
-input_initial_stress = [1]
+                #print weight_matrix
 
-country_rank_df = nc.compute_countryrank(weight_matrix, input_entities_list, input_stressed_list,
-                                         input_initial_stress, draw_network=False)
-country_rank_df.to_csv(os.path.join(path,'ctry.csv'))
+                #plt.imshow(weight_matrix, cmap='hot', interpolation='nearest')
+                #plt.show()
 
-aux2 = country_rank_df.set_index('Entity')
+                #plotting network based on weight matrix
+                #ut.draw_network_alternative(weight_matrix, input_entities_np[:, 0], input_entities_np[:, 1], True)
 
-dic_count = {'RUSSIA':'Russian Fedn',
-'AKT':'Oil Transporting Jt Stk Co Transneft',
-'BKECON':'Vnesheconombank',
-'BOM':'Bk of Moscow',
-'CITMOS':'City Moscow',
-'GAZPRU':'JSC GAZPROM',
-'GAZPRU.Gneft':'JSC Gazprom Neft',
-'LUKOIL':'Lukoil Co',
-'MBT':'Mobile Telesystems',
-'MDMOJC':'MDM Bk Open Jt Stk Co',
-'ALROSA':'Open Jt Stk Co ALROSA',
-'ROSNEF':'OJSC Oil Co Rosneft',
-'RSBZAO':'Jt Stk Co Russian Standard Bk',
-'RUSAGB':'Russian Agric Bk',
-'RUSRAI':'JSC Russian Railways',
-'SBERBANK':'SBERBANK',
-'VIP':'OPEN Jt Stk Co VIMPEL Comms',
-'VTB':'JSC VTB Bk'}
+                #network_stats_np = nc.calculate_network_stats(input_entities_np[:, 0], weight_matrix)
+                #print (pd.DataFrame(data=network_stats_np, columns=['Entities', 'Centrality']))
 
-    
+                #print '----------------------------------------------------------------'
+                print('Done calibrating network weight matrix:' + str(datetime.datetime.now() - start_time))
+                #print '----------------------------------------------------------------'
+                # print(weight_matrix)
+                weight_df = pd.DataFrame(weight_matrix, index = input_entities_list, columns = input_entities_list)
+                aux = weight_df.loc['Russian Fedn',:]
+                # print(weight_df.loc['Russian Fedn',:])
+                # print(pd.DataFrame(weight_matrix))
 
-comp = pd.concat([aux2,aux, bayes], axis = 1).sort_values(by='CountryRank',ascending = False)
-comp.rename(columns = {'CountryRank': 'Neuronal Net',
-                        'Russian Fedn':'Connectedness to Sov',
-                        'SD':'Bayes'}, inplace = True)
+                # choices are self-calibrating or name of the entity to stress
+                #input_stressed_list = ['self-calibrating']
+                input_stressed_list = ['Russian Fedn']
+                # float parameter between 0 and 1 corresponding to initial level of stress for stressed entity
+                input_initial_stress = [1]
 
-comp.loc['Russian Fedn','Connectedness to Sov'] = 1
-comp.loc['Russian Fedn','Bayes'] = 1
+                country_rank_df = nc.compute_countryrank(weight_matrix, input_entities_list, input_stressed_list,
+                                                         input_initial_stress, draw_network=False)
+                country_rank_df.to_csv(os.path.join(path,'ctry.csv'))
 
-if filter_market:
-    path_bayes = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered\probabilities\bds'
-    directory = 'stddev_'+str(epsilon_up_time_parameter)+'_abs_'+str(absolute_up)
-    filename = 'prob_weight_bayes_marketfilter_'\
-        + str(epsilon_up_time_parameter)\
-        + '_abs_'+str(absolute_up)+'.csv'
+                aux2 = country_rank_df.set_index('Entity')
 
-    bayes = pd.read_csv(os.path.join(path_bayes, directory, filename),index_col = 0)
-    bayes.rename(index = dic_count, inplace = True)
-else:
-    path_bayes = r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\Sliced_ep_draw_new\original_dates'
-    
-    filename = 'prob_weight_bayes_notfilter_'\
-        + str(epsilon_up_time_parameter)\
-        + '_abs_'+str(absolute_up)+'.csv'
+                dic_count = {'RUSSIA':'Russian Fedn',
+                'AKT':'Oil Transporting Jt Stk Co Transneft',
+                'BKECON':'Vnesheconombank',
+                'BOM':'Bk of Moscow',
+                'CITMOS':'City Moscow',
+                'GAZPRU':'JSC GAZPROM',
+                'GAZPRU.Gneft':'JSC Gazprom Neft',
+                'LUKOIL':'Lukoil Co',
+                'MBT':'Mobile Telesystems',
+                'MDMOJC':'MDM Bk Open Jt Stk Co',
+                'ALROSA':'Open Jt Stk Co ALROSA',
+                'ROSNEF':'OJSC Oil Co Rosneft',
+                'RSBZAO':'Jt Stk Co Russian Standard Bk',
+                'RUSAGB':'Russian Agric Bk',
+                'RUSRAI':'JSC Russian Railways',
+                'SBERBANK':'SBERBANK',
+                'VIP':'OPEN Jt Stk Co VIMPEL Comms',
+                'VTB':'JSC VTB Bk'}
 
-path_to_save = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered\probabilities\CountryRank'
+                path_bayes = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered\probabilities\bds'
 
-comp.to_csv(os.path.join(path_to_save, filename))
+                directory = 'std_' +str(epsilon_up_time_parameter)+'_abs_'+str(absolute_up)
 
-print(comp)
+                if not filter_market:
+                    directory = directory + '_notfiltered'
+                    directory = 'stddev_'+str(epsilon_up_time_parameter)+'_abs_'+str(absolute_up)
+                    filename = 'prob_weight_bayes_marketfilter_'\
+                        + str(epsilon_up_time_parameter)\
+                        + '_abs_'+str(absolute_up)+'.csv'
+
+                filename = 'prob_'+str(epsilon_up_time_parameter)+'_delay_'+str(len(input_time_lag)-1)+'.csv'
+                bayes = pd.read_csv(os.path.join(path_bayes, directory, filename),index_col = 0)
+                bayes.rename(index = dic_count, inplace = True)
+
+                comp = pd.concat([aux2,aux, bayes], axis = 1).sort_values(by='CountryRank',ascending = False)
+                comp.rename(columns = {'CountryRank': 'Neuronal Net',
+                                        'Russian Fedn':'Connectedness to Sov',
+                                        'SD':'Bayes'}, inplace = True)
+
+                comp.loc['Russian Fedn','Connectedness to Sov'] = 1
+                comp.loc['Russian Fedn','Bayes'] = 1
+
+                path_to_save = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered\probabilities\CountryRank'
+                directory = 'time_'+str(epsilon_up_time_parameter)+'_abs_'+str(absolute_up)
+                if not os.path.isdir(os.path.join(path_to_save, directory)):
+                    os.makedirs(os.path.join(path_to_save, directory))
+                if filter_market:
+                    filename = 'comp_marketfilter_'\
+                        + str(epsilon_up_time_parameter)\
+                        + '_delay_' + str(len(input_time_lag)-1)\
+                        + '_abs_'+str(absolute_up)+'.csv'
+                else:
+                    filename = 'comp_notfilter_'\
+                        + str(epsilon_up_time_parameter)\
+                        + '_delay_' + str(len(input_time_lag)-1)\
+                        + '_abs_'+str(absolute_up)+'.csv'
+
+                comp.to_csv(os.path.join(path_to_save,directory, filename))
+
+                text = pd.Series(data = [filter_market, epsilon_up_time_parameter, len(input_time_lag)-1, absolute_up],
+                          index = ['Filter market effect: ','Time parameter: ','Delay: ','Absolute minimum jump: '])
+
+                print(text)
+
+                # print('Filter market effect: ' + str(filter_market))
+                # print('Time parameter: ' + str(epsilon_up_time_parameter))
+                # print('Delay: ' + str(len(input_time_lag)-1))
+                # print('Absolute minimum jump: '+str(absolute_up))
+
+                print(comp)
 
 
 # print(country_rank_df)

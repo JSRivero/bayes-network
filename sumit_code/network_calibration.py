@@ -265,7 +265,7 @@ def epsilon_drawup_network(entities_np, time_lag, market_ts, epsilon_choice, eps
     epsilon_drawup_matrix = []
     entities_list = entities_np[:, 0]
     for i in range(np.size(entities_list)):
-        print(entities_np[i,0])
+        # print(entities_np[i,0])
         epsilon_drawup_list = compute_epsilon_drawup(entities_np[i, 1:], epsilon_choice, epsilon_down_time_parameter,
                                                      epsilon_down_scale, minimal_epsilon_down, absolute_down, epsilon_up_time_parameter,
                                                      epsilon_up_scale, minimal_epsilon_up, absolute_up)
@@ -405,7 +405,7 @@ def test_significance_network(entities_np, time_lag, market_ts, epsilon_choice, 
     weight = []
     for i in range(1, 100):
         weight.append(weight_matrix_list[i][0][1])
-    print(weight)
+    # print(weight)
     np.save('weight_matrix_list.npy', np.asarray(weight_matrix_list))
     np.sort
 
@@ -604,11 +604,11 @@ def compute_countryrank(weight_matrix, entities_list, stressed_list, initial_str
                                     edge_weight)
     country_rank_df = pd.DataFrame(index=visited_list)
     entities_list_reordered = [entities_list[i] for i in visited_list]
-    print(country_rank)
-    print(entities_list_reordered)
+    # print(country_rank)
+    # print(entities_list_reordered)
     country_rank_df['Entity'] = entities_list_reordered
     country_rank_df['CountryRank'] = country_rank
-    print(tabulate(country_rank_df, showindex=False, headers=country_rank_df.columns))
+    # print(tabulate(country_rank_df, showindex=False, headers=country_rank_df.columns))
     return country_rank_df
 
 

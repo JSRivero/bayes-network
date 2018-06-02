@@ -13,6 +13,7 @@ RR = 1000
 algorithm = 'hc'
 
 abs = 10
+filter_market = TRUE
 
 path_to_save_prob= file.path(path_prob,used_score)
 path_to_save_net= file.path(path_net,used_score)
@@ -21,9 +22,11 @@ dir.create(path_to_save_net, showWarnings = FALSE)
 dir.create(path_to_save_prob, showWarnings = FALSE)
 
 for (time in list(10,15,20)){
-  
-  directory1 = paste('stddev',as.character(time),
-                     'abs',as.character(abs),sep = '_')
+  if (filter_market){
+    directory1 = paste('std',as.character(time),'abs',as.character(abs), sep = '_')
+  }else{
+    directory1 = paste('std',as.character(time),'abs',as.character(abs),'notfiltered', sep = '_')
+  }
   dir.create(file.path(path_to_save_prob,directory1))
   
   for (delay in list(1,2,3)){
@@ -52,6 +55,10 @@ for (time in list(10,15,20)){
     toc()
   }
 }
-name_file = paste('networks_',as.character(abs),'.RData',sep = '')
+if (filter_market){
+  name_file = paste('networks_',as.character(abs),'_filter.RData',sep = '')
+}else{
+  name_file = paste('networks_',as.character(abs),'_notfilter.RData',sep = '')
+}
 save(net_10_1,net_10_2,net_10_3,net_15_1,net_15_2,net_15_3,net_20_1,net_20_2,net_20_3,
      file = file.path(path_to_save_net, name_file))
