@@ -71,6 +71,52 @@ def change_gamma_v2(df_portfolio, df_prob):
 
     return df_aux
 
+def change_gamma(df_prob, df_port):
+
+def get_name(k):
+    
+    dic_count_1 = {'RUSSIA':'Russian Fedn',
+    'AKT':'Oil Transporting Jt Stk Co Transneft',
+    'BKECON':'Vnesheconombank',
+    'BOM':'Bk of Moscow',
+    'CITMOS':'City Moscow',
+    'GAZPRU':'JSC GAZPROM',
+    'GAZPRU.Gneft':'JSC Gazprom Neft',
+    'LUKOIL':'Lukoil Co',
+    'MBT':'Mobile Telesystems',
+    'MDMOJC':'MDM Bk Open Jt Stk Co',
+    'ALROSA':'Open Jt Stk Co ALROSA',
+    'ROSNEF':'OJSC Oil Co Rosneft',
+    'RSBZAO':'Jt Stk Co Russian Standard Bk',
+    'RUSAGB':'Russian Agric Bk',
+    'RUSRAI':'JSC Russian Railways',
+    'SBERBANK':'SBERBANK',
+    'VIP':'OPEN Jt Stk Co VIMPEL Comms',
+    'VTB':'JSC VTB Bk'}
+
+
+    dic_count_2 = {'RUSSIA':'Government of the Russian Federation',
+    'AKT':'Oil Transporting Jt Stk Co Transneft',
+    'BKECON':'Vnesheconombank',
+    'BOM':'Bank of Moscow OJSC',
+    'CITMOS':'City Moscow',
+    'GAZPRU':'GAZPROM PJSC',
+    'GAZPRU.Gneft':'JSC Gazprom Neft',
+    'LUKOIL':'LUKOIL PJSC',
+    'MBT':'Mobile Telesystems',
+    'MDMOJC':'MDM Bank JSC',
+    'ALROSA':'ALROSA Company Ltd',
+    'ROSNEF':'Rosneftegaz OJSC',
+    'RSBZAO':'Jt Stk Co Russian Standard Bk',
+    'RUSAGB':'Joint-stock company Russian Agricultural Bank',
+    'RUSRAI':'JSC Russian Railways',
+    'SBERBANK':'Sberbank of Russia',
+    'VIP':'VimpelCom Ltd.',
+    'VTB':'VTB Bank (public joint-stock company)'}
+
+
+    lKey = [key for key, value in lDictionary.iteritems() if value == lValue][0]
+
 
 
 def change_gamma(df_port, df_prob):

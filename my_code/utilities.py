@@ -312,6 +312,107 @@ def plot_selected(cds_ts,selection,time,delay, *arg):
     plt.legend()
     plt.show()
 
+def plot_selection(selection,time,delay, *arg):
+    """
+    Plots the time series of all entities in the cds time series
+
+    Parameters
+    ----------
+    cds_ts: DataFrame with the data for the CDS
+    date_axis: dates for the x-axis
+    arg: If it is there then the epsilon drawups are also plotted
+    """
+
+    # if 'RUSSIA' in selection:
+    #     selection = [a for a in selection if a!='RUSSIA']
+
+    cds_ts = pd.read_excel(r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\Russian_processed\data_5Y\entities_data_fixed.xlsx')
+
+    aux = cds_ts[cds_ts['Ticker']==selection[0]].copy()
+    aux2 = cds_ts[cds_ts['Ticker'].isin(selection[1:])].copy()
+    cds_ts = pd.concat([aux,aux2], axis = 0)
+
+    initial = '1-MAY-14'
+    final = '31-MAR-15'
+
+    try:
+        first_index = [x[0] for x in enumerate(cds_ts.iloc[0,:]) if type(x[1]) is str][-1]
+        df_static = cds_ts.iloc[:,:first_index+1].copy()
+        df = em.split_by_dates(cds_ts.iloc[:,first_index+1:], initial, final)
+    except IndexError:
+        df = em.split_by_dates(cds_ts, initial, final)
+
+    start = em.date_from_str(initial)
+    end = em.date_from_str(final)
+
+    date_axis = pd.bdate_range(start, end)
+    labels = []
+    ep = {}
+    ep_from_sov = {}
+    ep_ind = {}
+
+    for i in range(len(df.index)):
+        l = cds_ts.loc[cds_ts.index[i],'Ticker']
+        labels.append(l)
+        ep[l] = em.compute_epsilon_drawup(df.iloc[i,:],time,0)
+
+
+
+    val_rus = ep[selection[0]]
+    for k in ep.keys():
+        if k == selection[0]:
+            print(str(k) + ': ' +str(len(ep[k]))+' total')
+            continue
+        else:
+            ep_from_sov[k], ep_ind[k] = ep_coincidence(val_rus, ep[k], delay)
+
+            print(str(k) + ': ' + str(len(ep[k]))+' total and '+str(len(ep_from_sov[k])))
+
+
+    for k in ep.keys():
+        if k == selection[0]:
+            print(str(k) + ': ' +str(ep[k])+' total')
+        else:
+            print(str(k) + ': ' + str(ep[k])+' total \n '+str(ep_from_sov[k]))
+
+    b = False
+    for i in range(len(df.index)):
+
+        plt.plot(date_axis, df.iloc[i,:],linewidth=2, label = labels[i])
+        if arg:
+            if labels[i] == selection[0]:
+                epsilon_val = get_value_at_index(list(df.iloc[i,:]), ep[labels[i]])
+                plt.plot(date_axis, epsilon_val, 'o', color='black')
+
+            else:
+
+                ind_val = get_value_at_index(list(df.iloc[i,:]), ep_ind[labels[i]])
+
+                from_sov_val = get_value_at_index(list(df.iloc[i,:]), ep_from_sov[labels[i]])
+
+                if i == len(df.index)-1:
+                    b=True
+                if b:
+                    plt.plot(date_axis, ind_val, 'o', color='black', label = 'Epsilon drawups')
+                    plt.plot(date_axis, from_sov_val, 'o', color='blue', label = 'Caused by ' + selection[0])
+                else:
+                    plt.plot(date_axis, ind_val, 'o', color='black')
+                    plt.plot(date_axis, from_sov_val, 'o', color='blue')
+
+                b = False
+
+    plt.grid(True)
+    if arg:
+        plt.title('CDS spreads with epsilon drawups')
+    else:
+        plt.title('CDS spreads')
+    plt.ylabel('CDS spread in bps', fontsize=20)
+    # plt.xlabel('Date', fontsize=20)
+    plt.rc('xtick', labelsize=15)
+    plt.rc('ytick', labelsize=15)
+    plt.legend()
+    plt.show()
+
 def ep_coincidence(val_rus, count, delay):
     intersection = []
     for c in count:
@@ -448,6 +549,42 @@ def plot_epsilon_drawup_entity(entities_np, entity_name, epsilon_choice, epsilon
     plt.legend(('CDS spread', 'Local minima', 'Local maxima',
                 'Modified epsilon draw-up'), loc=2, prop={'size': 20})
     plt.show()
+
+def comparisons_prob_sumit_bayes():
+    path = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered\probabilities\Comp_old_new'
+    for time_param in [10,15,20]:
+        for absolute in [0,10]:
+            folder = 'time_'+str(time_param)+'_abs_'+str(absolute)
+            if not os.path.isdir(os.path.join(path,folder)):
+                os.makedirs(os.path.join(path, folder))
+            for delay in [1,2,3]:
+                for filtered in [True, False]:
+                    if filtered:
+                        filename = 'filter_' + str(time_param) + '_delay_' + str(delay) + '_abs_' + str(absolute) + '.csv'
+                    else:
+                        filename = 'notfilt_' + str(time_param) + '_delay_' + str(delay) + '_abs_' + str(absolute) + '.csv'
+                    df = comp_sumit_bayes_old_new(time_param, delay,absolute, filtered)
+                    df.to_csv(os.path.join(path,folder, filename))
+
+
+
+def comp_sumit_bayes_old_new(time_param, delay,absolute, filtered):
+    path = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered\probabilities'
+    folder_old = 'CountryRank'
+    folder_new = 'CountryRank_new'
+    directory = 'time_'+str(time_param)+'_abs_'+str(absolute)
+    if filtered:
+        name = 'comp_marketfilter_'+str(time_param)+'_delay_'+str(delay)+'_abs_'+str(absolute)
+    else:
+        name = 'comp_notfilter_'+str(time_param)+'_delay_'+str(delay)+'_abs_'+str(absolute)
+
+    filename_old = name+'.csv'
+    filename_new = name+'_new.csv'
+    df_old = pd.read_csv(os.path.join(path,folder_old,directory,filename_old),index_col = 0)
+    df_new = pd.read_csv(os.path.join(path,folder_new,directory,filename_new),index_col = 0)
+    result = pd.concat([df_old['Sumit Old'], df_new[['Sumit New','Bayes']]], axis = 1).sort_values(by='Sumit New',ascending = False)
+    return result
+
 
 
 def write_to_excel(table, path, name_file):

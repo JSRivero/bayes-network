@@ -43,7 +43,11 @@ for epsilon_up_time_parameter in [10,15,20]:
     for delay in [1,2,3]:
         for absolute_up in [0,10]:
             for filter_market in [True, False]:
-                # filter_market = True
+                # filter_market = False
+                # delay = 3
+                # epsilon_up_time_parameter = 10
+                # absolute_up = 0
+
                 if filter_market:
                     input_market_ts = dp.load_market_data(path, market_filename)
                     input_market_ts[-8] = (input_market_ts[-7]+input_market_ts[-9])/2
@@ -75,16 +79,13 @@ for epsilon_up_time_parameter in [10,15,20]:
 
 
 
-                # delay = 2
                 input_time_lag = list(range(delay+1))
                 epsilon_down_time_parameter = 20
                 epsilon_down_scale = 0
                 minimal_epsilon_down = 0
                 absolute_down = 0
-                # epsilon_up_time_parameter = 15
                 epsilon_up_scale = 1
                 minimal_epsilon_up = 0
-                # absolute_up = 0
 
                 weight_matrix,epsilon_drawup_matrix = nc.epsilon_drawup_network(
                             input_entities_np, input_time_lag, input_market_ts,
@@ -129,7 +130,10 @@ for epsilon_up_time_parameter in [10,15,20]:
                 # print(weight_matrix)
                 weight_df = pd.DataFrame(weight_matrix, index = input_entities_list, columns = input_entities_list)
                 aux = weight_df.loc['Russian Fedn',:]
-                # print(weight_df.loc['Russian Fedn',:])
+                print(pd.DataFrame(data = epsilon_drawup_matrix,index = input_entities_list).loc['Russian Agric Bk', :].values)
+                print(pd.DataFrame(data = epsilon_drawup_matrix,index = input_entities_list).loc['Russian Fedn', :].values)
+                # print(weight_df.loc['Russian Agric Bk',:])
+                print(weight_df.loc['Russian Fedn','Russian Agric Bk'])
                 # print(pd.DataFrame(weight_matrix))
 
                 # choices are self-calibrating or name of the entity to stress
@@ -169,17 +173,13 @@ for epsilon_up_time_parameter in [10,15,20]:
 
                 if not filter_market:
                     directory = directory + '_notfiltered'
-                    directory = 'stddev_'+str(epsilon_up_time_parameter)+'_abs_'+str(absolute_up)
-                    filename = 'prob_weight_bayes_marketfilter_'\
-                        + str(epsilon_up_time_parameter)\
-                        + '_abs_'+str(absolute_up)+'.csv'
 
                 filename = 'prob_'+str(epsilon_up_time_parameter)+'_delay_'+str(len(input_time_lag)-1)+'.csv'
                 bayes = pd.read_csv(os.path.join(path_bayes, directory, filename),index_col = 0)
                 bayes.rename(index = dic_count, inplace = True)
 
                 comp = pd.concat([aux2,aux, bayes], axis = 1).sort_values(by='CountryRank',ascending = False)
-                comp.rename(columns = {'CountryRank': 'Neuronal Net',
+                comp.rename(columns = {'CountryRank': 'Sumit Old',
                                         'Russian Fedn':'Connectedness to Sov',
                                         'SD':'Bayes'}, inplace = True)
 
@@ -203,17 +203,12 @@ for epsilon_up_time_parameter in [10,15,20]:
 
                 comp.to_csv(os.path.join(path_to_save,directory, filename))
 
-                text = pd.Series(data = [filter_market, epsilon_up_time_parameter, len(input_time_lag)-1, absolute_up],
-                          index = ['Filter market effect: ','Time parameter: ','Delay: ','Absolute minimum jump: '])
+# text = pd.Series(data = [filter_market, epsilon_up_time_parameter, len(input_time_lag)-1, absolute_up],
+#           index = ['Filter market effect: ','Time parameter: ','Delay: ','Absolute minimum jump: '])
 
-                print(text)
+# print(text)
 
-                # print('Filter market effect: ' + str(filter_market))
-                # print('Time parameter: ' + str(epsilon_up_time_parameter))
-                # print('Delay: ' + str(len(input_time_lag)-1))
-                # print('Absolute minimum jump: '+str(absolute_up))
-
-                print(comp)
+# print(comp)
 
 
 # print(country_rank_df)

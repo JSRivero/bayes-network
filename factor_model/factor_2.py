@@ -1051,6 +1051,8 @@ def main2():
         plot_three_comp(U,time)
     df.to_csv(r'C:\Users\Javier\Documents\MEGA\Thesis\Results\Capital_periods\comp.csv')
 
+
+
 def main_only_plot():
     percent = 0
     df = pd.read_csv(r'C:\Users\Javier\Documents\MEGA\Thesis\Results\Capital_periods\comp.csv', index_col=0)

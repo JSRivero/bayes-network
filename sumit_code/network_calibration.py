@@ -356,7 +356,26 @@ def calculate_conditional_impact(epsilon_drawup_matrix, time_lag):
             true_count = occurrence.sum()
             if len(entity_ts) > 0:
                 adj_matrix[i, j] = true_count / len(entity_ts)
+
+        # if len(entity_ts) > 0:
+        #     for j in range(rows):
+        #         entity_ts_to_filter = epsilon_drawup_matrix[j]
+        #         occurence = new_count(entity_ts, entity_ts_to_filter, time_lag)
+        #         true_count = len(occurence)
+        #         adj_matrix[i, j] = true_count / len(entity_ts)
+
     return adj_matrix
+
+def new_count(sov,corp, time_lag):
+    intersect = []
+    rest_sov = sov[:]
+    rest_corp = corp[:]
+    for time in time_lag:
+        intersect.extend(list(set(rest_sov).intersection(set(rest_corp))))
+        rest_sov = [a+1 for a in rest_sov if a not in intersect]
+        rest_corp = [a for a in rest_corp if a not in intersect]
+    return sorted(intersect)
+
 
 def test_significance_network(entities_np, time_lag, market_ts, epsilon_choice, epsilon_down_time_parameter, epsilon_down_scale, minimal_epsilon_down, absolute_down,
                            epsilon_up_time_parameter, epsilon_up_scale, minimal_epsilon_up, absolute_up):
