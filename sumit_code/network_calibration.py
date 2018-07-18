@@ -344,25 +344,25 @@ def calculate_conditional_impact(epsilon_drawup_matrix, time_lag):
     adj_matrix = np.zeros([rows, rows])
     for i in range(rows):
         entity_ts = np.ravel(epsilon_drawup_matrix[i][:])
-        for j in range(rows):
-            entity_ts_to_filter = epsilon_drawup_matrix[j]
-            occurrence_matrix = np.zeros([len(time_lag), np.size(entity_ts)])
-            for time in time_lag:
-                entity_ts_tmp = [entity_ts[k] + time for k in range(len(entity_ts))]
-                occurrence_matrix[time][:] = np.in1d(entity_ts_tmp, entity_ts_to_filter)
-            occurrence = occurrence_matrix[0][:]
-            for index in range(1, occurrence_matrix.shape[0]):
-                occurrence = np.logical_or(occurrence, occurrence_matrix[index][:])
-            true_count = occurrence.sum()
-            if len(entity_ts) > 0:
-                adj_matrix[i, j] = true_count / len(entity_ts)
-
-        # if len(entity_ts) > 0:
-        #     for j in range(rows):
-        #         entity_ts_to_filter = epsilon_drawup_matrix[j]
-        #         occurence = new_count(entity_ts, entity_ts_to_filter, time_lag)
-        #         true_count = len(occurence)
+        # for j in range(rows):
+        #     entity_ts_to_filter = epsilon_drawup_matrix[j]
+        #     occurrence_matrix = np.zeros([len(time_lag), np.size(entity_ts)])
+        #     for time in time_lag:
+        #         entity_ts_tmp = [entity_ts[k] + time for k in range(len(entity_ts))]
+        #         occurrence_matrix[time][:] = np.in1d(entity_ts_tmp, entity_ts_to_filter)
+        #     occurrence = occurrence_matrix[0][:]
+        #     for index in range(1, occurrence_matrix.shape[0]):
+        #         occurrence = np.logical_or(occurrence, occurrence_matrix[index][:])
+        #     true_count = occurrence.sum()
+        #     if len(entity_ts) > 0:
         #         adj_matrix[i, j] = true_count / len(entity_ts)
+
+        if len(entity_ts) > 0:
+            for j in range(rows):
+                entity_ts_to_filter = epsilon_drawup_matrix[j]
+                occurence = new_count(entity_ts, entity_ts_to_filter, time_lag)
+                true_count = len(occurence)
+                adj_matrix[i, j] = true_count / len(entity_ts)
 
     return adj_matrix
 

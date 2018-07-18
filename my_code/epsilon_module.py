@@ -340,7 +340,7 @@ def compute_save_delays_epsilon_filtered(ep, time_param, delay, percent, absolut
     delay: Either list or integer containing 
     '''
     if percent > 0:
-        path = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered\epsilon'
+        path = r'C:\Users\Javier\Documents\MEGA\Thesis\restuls_1Y\epsilon'
         if filter_market:
             directory = 'std_' + str(time_param) + '_abs_' + str(absolute) + '_long_' + str(percent)
         else:
@@ -349,7 +349,7 @@ def compute_save_delays_epsilon_filtered(ep, time_param, delay, percent, absolut
         if not os.path.isdir(os.path.join(path, directory)):
             os.makedirs(os.path.join(path, directory))
     else:
-        path = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered\epsilon'
+        path = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered_total\epsilon'
         if filter_market:
             directory = 'std_' + str(time_param) + '_abs_' + str(absolute)
         else:
@@ -526,14 +526,6 @@ def check_ep_absolute(cds_ts,local_min,local_max,epsilon_stddev_up,index, percen
     else:
         return False
 
-def filter_market_data(ep, market, delay):
-    total = market[:]
-    for d in range(1,delay+1):
-        total.extend([a+d for a in ep])
-    total = sorted(list(set(total)))
-    filtered = [e for e in ep if e not in total]
-    return filtered
-
 def epsilon_filtered(percent, absolute, filter_market):
     path = r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\Russian_processed\data_5Y'
     cds = pd.read_excel(os.path.join(path,'entities_data_fixed.xlsx'))
@@ -549,6 +541,183 @@ def epsilon_filtered(percent, absolute, filter_market):
     cds_ts = pd.concat([df_static,data],axis = 1)
 
     compute_save_all_epsilon_filtered(cds_ts, [10, 15, 20], [1, 2, 3], percent, absolute, filter_market)
+
+def epsilon_not_filtered():
+    path = r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\Russian_processed\data_5Y'
+    cds = pd.read_excel(os.path.join(path,'entities_data_fixed.xlsx'))
+    
+
+# GENERATE EPSILON FOR ALL THE PERIOD (BOTH FILTER AND NOT)
+def epsilon_total_filtered(percent,absolute):
+    path = r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\Russian_processed\data_5Y'
+    cds = pd.read_excel(os.path.join(path,'entities_data_fixed.xlsx'))
+
+    path_market_data = r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\sumit_data'
+    filename_market = 'total_market_data.npy'
+    market_ts = np.load(os.path.join(path_market_data,filename_market))
+    filter_market = True
+    # first_index = [x[0] for x in enumerate(cds.iloc[0,:]) if type(x[1]) is str][-1]
+
+    # df_static = cds[cds.columns[:first_index+1]].copy()
+    # df_dynamic = cds[cds.columns[first_index + 1:]].copy()
+
+    # initial = '01-MAY-14'
+    # final = '31-MAR-15'
+    # data = df_dynamic.iloc[:,list(df_dynamic.columns).index(initial):(list(df_dynamic.columns).index(final)+1)]
+
+    # data = df_dynamic.copy()
+
+    # cds_ts = pd.concat([df_static,data],axis = 1)
+
+    compute_total_filtered(cds, [10, 15, 20], [1, 2, 3], percent, absolute, filter_market, market_ts)
+
+def compute_total_filtered(cds, time_param, delay, percent, absolute, filter_market, market_ts):
+    ''' Computes the epsilon drawups for all the time parameters introduced,
+        the delayed epsilon drawups for each of them and then save them in the
+        correspondent file and directory.
+
+    Arguments:
+    cds: dataframe with the cds time series
+    time_param: list or integer with the time parameter
+    delay: list or integer for the delay
+    '''
+    if type(delay) == int:
+        delay = [delay]
+    # data_sumit = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered_data_original'
+    # market_filename = "market_data.npy"
+    # market_ts = np.load(os.path.join(data_sumit, market_filename))
+    # market_ts[-8] = (market_ts[-9] + market_ts[-7])/2
+    if type(time_param) == list:
+        for t in time_param:
+            if filter_market:
+                market_drawup = compute_epsilon_drawup_filtered(market_ts, t, percent,absolute)
+                print(market_drawup)
+                for d in delay:
+                    ep = compute_table_epsilon_filtered(cds, t, percent, market_drawup, d, absolute)
+                    compute_save_delays_epsilon_filtered(ep, t, d, percent, absolute, filter_market)
+            else:
+                ep = compute_table_epsilon_v2(cds, t, percent)
+                for d in delay:
+                    compute_save_delays_epsilon_filtered(ep, t, d, percent, absolute, filter_market)
+    elif type(time_param) == int:
+        if filter_market:
+            market_drawup = compute_epsilon_drawup_filtered(market_ts, time_param, percent,absolute)
+            for d in delay:
+                ep = compute_table_epsilon_filtered(cds, time_param, percent, market_drawup, d, absolute)
+                compute_save_delays_epsilon_filtered(ep, time_param, d, percent, absolute, filter_market)
+        else:
+            ep = compute_table_epsilon_v2(cds, time_param, percent)
+            for d in delay:
+                compute_save_delays_epsilon_filtered(ep, time_param, d, percent, absolute, filter_market)
+    else:
+        print('ValueError: Delay is not a list nor a integer. Please introduce accepted values.')
+
+def epsilon_delete_market_data(clean, *arg):
+    path = r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\Russian_processed\data_5Y'
+    cds = pd.read_excel(os.path.join(path,'entities_data_fixed.xlsx'))
+
+    time = 10
+    absolute = 0
+    delay = 3
+    percent = 0
+
+    path_market_data = r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\sumit_data'
+    # filename_market = 'total_market_data.npy'
+    # market_ts = np.load(os.path.join(path_market_data,filename_market))
+
+    if clean:
+        first_index = [x[0] for x in enumerate(cds.iloc[0,:]) if type(x[1]) is str][-1]
+
+        df_static = cds[cds.columns[:first_index+1]].copy()
+        df_dynamic = cds[cds.columns[first_index + 1:]].copy()
+
+        initial = '01-MAY-14'
+        final = '31-MAR-15'
+        data = df_dynamic.iloc[:,list(df_dynamic.columns).index(initial):(list(df_dynamic.columns).index(final)+1)]
+
+        cds = pd.concat([df_static,data],axis = 1)
+
+        filename_market = 'market_data.npy'
+        market_ts = np.load(os.path.join(path_market_data,filename_market))
+        market_ts[-8] = (market_ts[-9] + market_ts[-7])/2
+
+        path_to_save = r'C:\Users\Javier\Documents\MEGA\Thesis\results_1Y\epsilon'
+
+    else:
+        filename_market = 'total_market_data_previous.npy'
+        market_ts = np.load(os.path.join(path_market_data,filename_market))
+
+        path_to_save = r'C:\Users\Javier\Documents\MEGA\Thesis\filtered_total\epsilon'
+
+    filter_market = True
+
+    if filter_market:
+        directory = 'std_'+str(time)+'_abs_'+str(absolute)+'_deleted_market'
+        filename = 'ep_drawups_'+str(time)+'_delay_'+str(delay)+'.csv'
+        if not os.path.isdir(os.path.join(path_to_save, directory)):
+            os.makedirs(os.path.join(path_to_save, directory))
+    else:
+        directory = 'std_'+str(time)+'_abs_'+str(absolute)+'_notfiltered'
+        filename = 'ep_drawups_'+str(time)+'_delay_'+str(delay)+'.csv'
+
+    market_drawup = compute_epsilon_drawup_filtered(market_ts, time, percent,absolute)
+    print(market_drawup)
+    ep = compute_table_epsilon_deleting_market(cds, time, percent, market_drawup, delay, absolute)
+
+    ep = compute_delayed_ep_drawups(ep, delay)
+
+    print(all(ep!=0.5))
+
+    ep.to_csv(os.path.join(path_to_save, directory, filename))
+
+def compute_table_epsilon_deleting_market(cds_ts, time_param, percent, market_drawup, d, absolute):
+    ''' Computes the whole table of epsilon drawups for the 
+        second set of data and deletes the market impact.
+
+        Improved version
+
+    Arguments:
+    cds_ts: dataframe with the time series
+    time_param: time paramter to compute the epsilon drawups
+    '''
+    # Get the date where we have the last string
+    first_index = [x[0] for x in enumerate(cds_ts.iloc[0,:]) if type(x[1]) is str][-1]
+    df_static = cds_ts[cds_ts.columns[:first_index+1]]
+    df_dynamic = cds_ts[cds_ts.columns[first_index + 1:]]
+    # Convert the columns names to datetime objects
+    # df = columns_to_dt(df_dynamic)
+    df = df_dynamic.copy()
+
+    table_eps = pd.DataFrame(0.0, index = cds_ts['Ticker'], columns = df.columns)
+
+    for i in range(cds_ts.shape[0]):
+        epsilon_drawups = compute_epsilon_drawup_filtered(cds_ts.iloc[i,first_index+1:], time_param, percent/100, absolute)
+        epsilon_drawups = filter_market_data(epsilon_drawups, market_drawup, d)
+        if len(epsilon_drawups) > 0:
+            table_eps.iloc[i, epsilon_drawups] = 1.0
+
+    total = market_drawup[:]
+    for d in range(1,d+1):
+        total.extend([a+d for a in market_drawup])
+
+    total = sorted(list(set(total)))
+
+    col_to_drop = df.columns[total]
+
+    table_eps.drop(col_to_drop, axis = 1, inplace = True)
+
+    return table_eps
+
+
+def filter_market_data(ep, market, delay):
+    total = market[:]
+    for d in range(1,delay+1):
+        total.extend([a+d for a in market])
+    total = sorted(list(set(total)))
+    filtered = [e for e in ep if e not in total]
+    return filtered
+
+
 
 def epsilon_not_filter(percent,absolute):
     path = r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\Russian_processed\data_5Y'
@@ -572,6 +741,22 @@ def epsilon(percent):
     path = r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\Russian_processed\data_5Y'
     cds = pd.read_excel(os.path.join(path,'entities_data_fixed.xlsx'))
     compute_save_all_epsilon(cds, [10, 15, 20], [1, 2, 3], percent)
+
+def select_3Y(time, delay):
+    absolute = 0
+    path_read = r'C:\Users\Javier\Documents\MEGA\Thesis\results_5Y\epsilon'
+    path_save = r'C:\Users\Javier\Documents\MEGA\Thesis\results_3Y\epsilon'
+    directory = 'std_'+str(time)+'_abs_'+str(absolute)+'_notfiltered'
+    if not os.path.isdir(os.path.join(path_save, directory)):
+        os.makedirs(os.path.join(path_save, directory))
+    if delay == 0:
+        filename = 'raw_ep_drawups'+str(time)+'.csv'
+    else:
+        filename = 'ep_drawups_'+str(time)+'_delay_'+str(delay)+'.csv'
+
+    df = pd.read_csv(os.path.join(path_read,directory, filename), index_col = 0)
+    df[df.columns[506:]].to_csv(os.path.join(path_save,directory, filename))
+
 
 
 def hist_jumps(array):
@@ -607,6 +792,12 @@ def quantile_jumps(array, quant):
 
 
 # Functions to split the data in different windows
+
+# dic = {'JAN':'01','FEB':'02','MAR':'03','APR':'04','MAY':'05','JUN':'06',
+#         'JUL':'07','AUG':'08','SEP':'09','OCT':'10','NOV':'11','DEC':'12'}
+
+# dic2 = {'01': 'JAN', '02': 'FEB', '03': 'MAR', '04': 'APR', '05': 'MAY', '06': 'JUN',
+#         '07': 'JUL', '08': 'AUG', '09': 'SEP', '10': 'OCT', '11': 'NOV', '12': 'DEC'}
 
 def date_from_str(string):
     dic = {'JAN':1,'jan':1,'FEB':2,'feb':2,'MAR':3,'mar':3,'APR':4,'apr':4,'MAY':5,'may':5,'JUN':6,'jun':6,

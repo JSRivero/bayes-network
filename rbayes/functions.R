@@ -113,6 +113,11 @@ reading_original <- function(time_para, delay, path, directory){
   return(ep_draw)
 }
 
+delete_counterparty <- function(df, counterparty){
+  colm = which(colnames(df) == counterparty)
+  return(df[,-colm])
+}
+
 
 reading_split <- function(time_para, delay, wind, move, name_directory, all){
   unpack[path_ep, lista_dirs] = lista_files(wind, move)
@@ -217,6 +222,138 @@ compute_prob_v2 <- function(network, inst_def, data){
   
 }
 
+compute_prob_inv_v2 <- function(network, inst_def, data){
+  node_names = nodes(network)
+  parameters = bn.fit(network, data)
+  
+  CPGSD <- as.data.frame(matrix(0.0,length(node_names),1), row.names = node_names)
+  colnames(CPGSD) = c('SD')
+  param = parameters
+  
+  for (name_node in node_names){
+    st_SD = paste("(", name_node, "=='","1.0')", sep = "")
+    
+    st = paste("(",  as.character(inst_def), "=='1.0')", sep = "")
+    cmd_SD = paste("cpquery(param, event = ", st, ", evidence = ", st_SD, ", n = 4 * 10**5)", sep = "")
+    CPGSD[name_node,'SD'] <- eval(parse(text = cmd_SD))
+    
+    st = paste("(",  as.character(inst_def), "=='0.5')", sep = "")
+    cmd_SD = paste("cpquery(param, event = ", st, ", evidence = ", st_SD, ", n = 4 * 10**5)", sep = "")
+    CPGSD[name_node,'SD'] <-  CPGSD[name_node,'SD'] +  eval(parse(text = cmd_SD))
+    
+    
+    # st_NSD = paste("(", as.character(inst_def), "=='", "0.0')", sep = "")
+    # cmd_NSD = paste("cpquery(param, ", st, ", ", st_NSD, ", n = 10**5)", sep = "")
+    # CPGSD[name_node,'NSD'] <- eval(parse(text = cmd_NSD))
+  }
+  
+  CPGSD <- CPGSD[!(row.names(CPGSD) %in% c(inst_def)),,drop = FALSE]
+  CPGSD <- CPGSD[order(-CPGSD$SD), , drop = FALSE]
+  # arrange(cbind(row.names(CPGSD),CPGSD),desc(SD))
+  return(CPGSD)
+  
+}
+
+compute_prob_group <- function(network, data, group){
+  node_names = nodes(network)
+  parameters = bn.fit(network, data)
+  
+  nodes_event = node_names[-match(group,node_names)]
+  
+  CPGSD <- as.data.frame(matrix(0.0,length(node_names),1), row.names = node_names)
+  colnames(CPGSD) = c('SD')
+  param = parameters
+  st_SD = paste('((',group[1]," == '1.0')",sep = '')
+  for (g in group[-1]){
+    st_SD = paste(st_SD," & (",g," == '1.0')",sep = '')
+  }
+  st_SD = paste(st_SD,')',sep = '')
+  print(st_SD)
+  
+  for (name_node in nodes_event){
+    st = paste("(", name_node, "=='1.0')", sep = "")
+    cmd_SD = paste("cpquery(param, event = ", st, ", evidence = ", st_SD, ", method='ls', n = 10**6)", sep = "")
+    CPGSD[name_node,'SD'] <- eval(parse(text = cmd_SD))
+    
+    st = paste("(", name_node, "=='0.5')", sep = "")
+    cmd_SD = paste("cpquery(param, event = ", st, ", evidence = ", st_SD, ", method='ls', n = 10**6)", sep = "")
+    CPGSD[name_node,'SD'] <-  CPGSD[name_node,'SD'] +  eval(parse(text = cmd_SD))
+    
+    
+    # st_NSD = paste("(", as.character(inst_def), "=='", "0.0')", sep = "")
+    # cmd_NSD = paste("cpquery(param, ", st, ", ", st_NSD, ", n = 10**5)", sep = "")
+    # CPGSD[name_node,'NSD'] <- eval(parse(text = cmd_NSD))
+  }
+  for (name_node in group){
+    CPGSD[name_node,'SD'] <-1.0
+  }
+  
+  # CPGSD <- CPGSD[!(row.names(CPGSD) %in% c(inst_def)),,drop = FALSE]
+  CPGSD <- CPGSD[order(-CPGSD$SD), , drop = FALSE]
+  # arrange(cbind(row.names(CPGSD),CPGSD),desc(SD))
+  return(CPGSD)
+  
+}
+
+uncer_group <- function(network, data, group, M){
+  node_names = nodes(network)
+  parameters = bn.fit(network, data)
+  
+  nodes_event = node_names[-match(group,node_names)]
+  
+  CPGSD <- as.data.frame(matrix(0.0,length(node_names),M), row.names = node_names)
+  CPGSD <- compute_prob_group(network, data, group)
+  for (i in 2:M){
+    tic(i)
+    CPGSD_aux <- compute_prob_group(network, data, group)
+    CPGSD <- merge(CPGSD,CPGSD_aux, by = 0)
+    rownames(CPGSD) = as.character(unlist(CPGSD[,1]))
+    CPGSD = CPGSD[,-1]
+    toc()
+  }
+  m = as.data.frame(apply(CPGSD,1,mean),row.names = rownames(CPGSD))
+  s = as.data.frame(apply(CPGSD,1,sd),row.names = rownames(CPGSD))
+  aux = merge(m,s,by = 0)
+  rownames(aux) = as.character(unlist(aux[,1]))
+  aux = aux[,-1]
+  colnames(aux) = c('mean','std')
+  aux <- aux[order(-aux$mean),,drop = FALSE]
+  return(aux)
+}
+
+compare_prob <- function(net1, net2, data, inst){
+  aux1 = compute_prob_v2(net1,inst,data)
+  aux2 = compute_prob_v2(net2,inst,data)
+  tot = merge(aux1,aux2,by=0)
+  rownames(tot) = as.character(unlist(tot[,1]))
+  tot = tot[,-1]
+  colnames(tot) = c('net1','net2')
+  tot <- tot[order(-tot$net1),,drop=FALSE]
+  return(tot)
+}
+
+uncer_prob <- function(net,data, inst_def, M){
+  para = bn.fit(net,data)
+  node_names = nodes(net)
+  node_names = node_names[-match(inst_def,node_names)]
+  # M = 100
+  prob = data.frame(matrix(0.0,length(node_names),M), row.names = node_names)
+  for (m in 1:M){
+    for (node in node_names){
+      prob[node,m] = cond_prob(para, inst_def, node)
+    }
+  }
+  tot_prob = data.frame()
+  m = apply(prob,1,mean)
+  s = apply(prob,1,sd)
+  for (n in rownames(prob)){
+     tot_prob[n,'mean']=m[n]
+     tot_prob[n,'std'] = s[n]
+  }
+  tot_prob <- tot_prob[order(-tot_prob$mean),,drop=FALSE]
+  return(tot_prob)
+}
+
 compute_prob <- function(net_information, inst_def, parameters){
   # List containing probabilities of defacult given sovereign default
   
@@ -299,17 +436,49 @@ cond_prob <- function(param, evidence, event){
   st_SD = paste("(", as.character(evidence), "=='","1.0')", sep = "")
   
   st = paste("(", as.character(event), "=='1.0')", sep = "")
-  cmd_SD = paste("cpquery(param, event = ", st, ", evidence = ", st_SD, ", n = 4 * 10**5)", sep = "")
+  cmd_SD = paste("cpquery(param, event = ", st, ", evidence = ", st_SD, ", n = 4 * 10**5, method = 'lw')", sep = "")
   result <- eval(parse(text = cmd_SD))
   
   st = paste("(", event, "=='0.5')", sep = "")
-  cmd_SD = paste("cpquery(param, event = ", st, ", evidence = ", st_SD, ", n = 4 * 10**5)", sep = "")
+  cmd_SD = paste("cpquery(param, event = ", st, ", evidence = ", st_SD, ", n = 4 * 10**5, method = 'lw')", sep = "")
   result <-  result +  eval(parse(text = cmd_SD))
+  
+  return(result)
 }
 
 plot_net <- function(bayesian_net){
   g1 = as.graphAM(bayesian_net)
-  plot(g1, attrs=list(node=list(fillcolor="lightgreen", fontsize = 50),edge=list(color="black")))
+  # colors = c()
+  # for (n in nodes(net_bic_not)){
+  #   colors = append(colors, rgb(255, 255, 0, maxColorValue=255))
+  # }
+  plot(g1, attrs=list(node=list(fillcolor="lightgreen", fontsize = 30),edge=list(color="black")))
+}
+
+plot_net_colors <- function(bayesian_net, prob, darkness){
+  col = colnames(prob)[1]
+  g1 = as.graphAM(bayesian_net)
+  for (n in nod){
+    if (!n%in%p){
+      l = append(l,n)
+    }
+  }
+  colors = c()
+  nAttrs <- list()
+  nodes = nodes(bayesian_net)
+  names(nodes) = nodes(bayesian_net)
+  nAttrs <- list()
+  nAttrs$label = nodes
+  for (n in nodes(net_bic_not)){
+    if (darkness == 0){
+      colors = append(colors, rgb(255*(1-prob[n,col]), 255*(1-prob[n,col]), 255*(1-prob[n,col]), maxColorValue=255))
+    }else{
+      colors = append(colors, rgb(255*(darkness-prob[n,col])/darkness, 255*(1-prob[n,col]), 255*(1-prob[n,col]), maxColorValue=255))
+    }
+  }
+  names(colors) = nodes(bayesian_net)
+  nAttrs$fillcolor = colors
+  plot(g1, nodeAttrs = nAttrs, attrs=list(node=list(fillcolor=colors, fontsize = 30),edge=list(color="black")))
 }
 
 compute_scores <- function(bnet, dataset){
@@ -424,6 +593,17 @@ print_prob_as_dic <- function(b){
     cat(': ')
     cat(b[a,'SD'])
     cat(', ')
+  }
+}
+
+print_edges_list <- function(b){
+  for (i in 1:(length(arcs(b))/2)){
+    a = arcs(b)[i,]
+    cat("['")
+    cat(a[1])
+    cat("','")
+    cat(a[2])
+    cat("'],")
   }
 }
   

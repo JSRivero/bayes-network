@@ -8,6 +8,9 @@ import os
 import pyperclip
 import math
 import matplotlib
+import random
+# import seaborn as sns
+# sns.set()
 from plotly.offline import download_plotlyjs,  iplot, plot
 import plotly.plotly as py
 #import network_calibration as nc
@@ -479,7 +482,7 @@ def plot_cds_all(cds_ts, *arg):
     end = em.date_from_str(cds_ts.columns[-1])
     date_axis = pd.bdate_range(start, end)
     for i in range(len(cds_ts.index)):
-        plt.plot(date_axis, cds_ts.iloc[i,first_index + 1:],linewidth=1)
+        plt.plot(date_axis, cds_ts.iloc[i,first_index + 1:],linewidth=1, label = cds_ts.iloc[i,1])
         if arg:
             epsilon_drawups = em.compute_epsilon_drawup(cds_ts.iloc[i,first_index + 1:],10)
             epsilon_val = get_value_at_index(list(cds_ts.iloc[i,first_index + 1:]), epsilon_drawups)
@@ -493,7 +496,75 @@ def plot_cds_all(cds_ts, *arg):
     # plt.xlabel('Date', fontsize=20)
     plt.rc('xtick', labelsize=15)
     plt.rc('ytick', labelsize=15)
+    plt.legend(loc = 'best')
     plt.show()
+
+def plot_cds_legend(cds_ts, *arg):
+    """
+    Plots the time series of all entities in the cds time series
+
+    Parameters
+    ----------
+    cds_ts: DataFrame with the data for the CDS
+    date_axis: dates for the x-axis
+    arg: If it is there then the epsilon drawups are also plotted
+    """
+    cds_ts = cds_ts.drop(cds_ts[cds_ts['Ticker']=='EVRGSA'].index)
+    first_index = [x[0] for x in enumerate(cds_ts.iloc[0,:]) if type(x[1]) is str][-1]
+    start = em.date_from_str(cds_ts.columns[first_index + 1])
+    end = em.date_from_str(cds_ts.columns[-1])
+    date_axis = pd.bdate_range(start, end)
+    fig = plt.figure()
+    ax = plt.subplot(111)
+    num = len(cds_ts.index)
+    cmap = plt.get_cmap('jet')
+    colors = [cmap(i) for i in np.linspace(0,1,num)]
+    # random.shuffle(colors)
+    dic = {'AKT':'Oil Transporting JSC Transneft', 'ALROSA':'Alrosa C.L.',
+          'BKECON':'Vnesheconombank', 'BOM':'Bank of Moscow', 'CITMOS':'City Moscow',
+          'GAZPRU':'JSC Gazprom', 'GAZPRU-Gneft':'JSC Gazprom Neft', 'LUKOIL':'Lukoil Company',
+          'MBT':'Mobile Telesystems', 'MDMOJC':'MDM Bank Open JSC', 'ROSNEF':'Open JSC Rosneft',
+          'RSBZAO':'JSC Russian Standard Bank', 'RUSAGB':'Russian Agriculture Bank',
+          'RUSRAI':'JSC Russian Railways', 'RUSSIA':'Russian Federation', 'SBERBANK':'Sberbank',
+          'VIP':'Open JSC VimpelCom Limited','VTB':'JSC VTB Bank'}
+    for i in range(num):
+        plt.plot(date_axis, cds_ts.iloc[i,first_index + 1:],linewidth=0.5, label = dic[cds_ts.iloc[i,0]], color = colors[i])
+        if arg:
+            epsilon_drawups = em.compute_epsilon_drawup(cds_ts.iloc[i,first_index + 1:],10)
+            epsilon_val = get_value_at_index(list(cds_ts.iloc[i,first_index + 1:]), epsilon_drawups)
+            plt.plot(date_axis, epsilon_val, 'o', color='black')
+    if arg:
+        plt.title('CDS spreads with epsilon drawups')
+    else:
+        plt.title('CDS spreads of Russian entities', fontsize = 13)
+    plt.ylabel('CDS spread in bps', fontsize=12)
+    # plt.xlabel('Date', fontsize=15)
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    ax.legend(loc = 'center left', bbox_to_anchor = (1, 0.5))
+    plt.rc('xtick', labelsize=15)
+    plt.rc('ytick', labelsize=15)
+    # plt.legend(loc = 'best')
+    # plt.savefig(r'C:\Users\Javier\Documents\MEGA\Thesis\Results\CDS\time_series.eps',bbox_inches = 'tight',dpi = 1200)
+    ax.grid(color = 'k', linestyle = 'dotted')
+    plt.show()
+
+def print_comparison_df_contagion(df):
+	for i in df.columns:
+		print(i.replace('Q. ','').replace('%',r'\%'), end = ' & ')
+		print("{:,}".format(int(df.loc['No contagion',i])), end = ' & ')
+		print("{:,}".format(int(df.loc['Sumit',i])), end = ' & ')
+		print("{:,}".format(int(df.loc['Sumit',i]-df.loc['No contagion',i])), end = ' & ')
+		print(int((df.loc['Sumit',i]-df.loc['No contagion',i])/df.loc['No contagion',i]*100), end = r'\%  \\')
+		print()
+
+def plot_entity_ts(cds_ts, entity):
+    first_index = [x[0] for x in enumerate(cds_ts.iloc[0,:]) if type(x[1]) is str][-1]
+    start = em.date_from_str(cds_ts.columns[first_index + 1])
+    end = em.date_from_str(cds_ts.columns[-1])
+    date_axis = pd.bdate_range(start, end)
+    ts_to_plot = cds_ts[cds_ts['Ticker'=entity]]
+
 
 
 def plot_epsilon_drawup_entity(entities_np, entity_name, epsilon_choice, epsilon_down_time_parameter,
@@ -905,3 +976,23 @@ def draw_stressed_network_v2(entities_list, rank, edge_list):
     py.image.save_as(fig,os.path.join(r'C:\Users\Javier\Documents\MEGA\Thesis\Results\Networks',
                 'precrisis_russia.png'))
     plt.show()
+
+
+def reorganize_prob():
+	path = r'C:\Users\Javier\Documents\MEGA\Thesis'
+	dirs = ['results_1Y','results_3Y','results_5Y']
+	for d in dirs:
+		subdirs = [f for f in os.listdir(os.path.join(path,d)) if f.startswith('networks')]
+		for sd in subdirs:
+			df = []
+			scores = []
+			p = os.path.join(path,d,sd)
+			files = [f for f in os.listdir(p) if f.endswith('.csv') and 'prob' in f]
+			for f in files:
+				df.append(pd.read_csv(os.path.join(p,f),index_col = 0))
+				scores.append(f.split('_')[0])
+			df_total = pd.concat(df,axis = 1)
+			df_total.columns = scores
+			file_to_save = 'comparison_prob_'+'_'.join(scores)+'_'+ '_'.join(sd.split('_')[1:])+'.xlsx'
+			df_total.sort_values(by='bic',ascending = False, inplace = True)
+			df_total.to_excel(os.path.join(p,file_to_save))

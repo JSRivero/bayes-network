@@ -1,0 +1,8 @@
+git
+ls
+python
+R.exe
+python
+R.exe
+cd factor_model\
+python factor_difference.py 

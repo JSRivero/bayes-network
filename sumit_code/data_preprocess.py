@@ -29,6 +29,13 @@ def create_numpy_array(entities_df, date_list):
     entities_np[row, 1:] = fx_ts
     np.save(r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\sumit_data\entities_data', entities_np)
 
+def create_np_array_5Y():
+    cds = pd.read_excel(r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\Russian_processed\data_5Y\entities_data_fixed.xlsx')
+    first_index = [x[0] for x in enumerate(cds) if type(x[1]) is str][-1]
+    cds.loc[cds[cds['Ticker']=='GAZPRU-Gneft'].index[0],'Ticker'] = 'GAZPRU.Gneft'
+    cds_np = np.asarray(pd.concat([cds['Ticker'],cds.iloc[:,5:]], axis = 1))
+    np.save(r'C:\Users\Javier\Documents\MEGA\Thesis\filtered_data_original\entities_data_5Y_ticker', cds_np)
+
 
 def load_entities_data(path, filename):
     temp_path = os.path.join(path,filename)
@@ -67,6 +74,19 @@ def data_preprocess_index():
     """
     index_df = pd.read_excel(r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\sumit_data\CDX+iTraxx.xlsx')
     return np.asarray(list(index_df['ITRX EUR CDSI GEN 5Y CBIN CORP']))[1793:2032]
+
+
+def market_preprocess_complete():
+    index_df = pd.read_excel(r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\sumit_data\CDX+iTraxx.xlsx')
+    return np.asarray(list(index_df['ITRX EUR CDSI GEN 5Y CBIN CORP']))[886:2116]
+
+def create_total_market_numpy():
+    """
+    Creates and saves the numpy array corresponding to market time series
+    """
+    market_ts = market_preprocess_complete()
+    np.save(r'C:\Users\Javier\Documents\MEGA\Thesis\CDS_data\sumit_data\market_data', market_complete)
+
 
 
 def create_market_numpy():
